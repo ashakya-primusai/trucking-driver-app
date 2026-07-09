@@ -61,7 +61,8 @@ function mapsDirectionsUrl(s: LoadStop): string | null {
 }
 
 function stopNumberForApi(stop: LoadStop, rawIndex: number): number {
-  return stop.stopNumber ?? rawIndex + 1;
+  const n = stop.stopNumber;
+  return typeof n === "number" && n > 0 ? n : rawIndex + 1;
 }
 
 function sortStopsForDisplay(stops: LoadStop[]): DecoratedStop[] {

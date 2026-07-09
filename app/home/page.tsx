@@ -104,7 +104,8 @@ function findNextStop(load: AssignedLoad): NextStopInfo | null {
   const [lng, lat] = target.coordinates;
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
-  const num = target.stopNumber ?? (stops.indexOf(target) + 1);
+  const n = target.stopNumber;
+  const num = typeof n === "number" && n > 0 ? n : stops.indexOf(target) + 1;
 
   // Try to find ETA from schedule summary
   let etaDisplay: string | null = null;

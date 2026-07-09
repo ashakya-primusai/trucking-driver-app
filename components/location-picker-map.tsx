@@ -107,7 +107,7 @@ export default function LocationPickerMap({ position, onPick, recenterTrigger, c
     void (async () => {
       const L = (await import("leaflet")).default;
       const latLng = L.latLng(position.lat, position.lng);
-      map.panTo(latLng, { animate: true });
+      map.setView(latLng, Math.max(map.getZoom(), 13), { animate: true });
     })();
   }, [recenterTrigger, position]);
 

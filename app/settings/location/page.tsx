@@ -15,6 +15,7 @@ import {
   setEmulationEnabled,
 } from "@/lib/location-emulation";
 import { useLocationTracking } from "@/lib/location-tracking-context";
+import type { PlaceSuggestion } from "@/lib/place-search";
 import type { PickerPosition } from "@/components/location-picker-map";
 
 const LocationPickerMap = dynamic(() => import("@/components/location-picker-map"), {
@@ -22,6 +23,10 @@ const LocationPickerMap = dynamic(() => import("@/components/location-picker-map
   loading: () => (
     <div className="h-[320px] w-full animate-pulse rounded-2xl border border-[color:var(--line)] bg-[color:var(--canvas-muted)]" />
   ),
+});
+
+const PlaceSearchInput = dynamic(() => import("@/components/place-search-input"), {
+  ssr: false,
 });
 
 export default function SettingsLocationPage() {
@@ -32,6 +37,7 @@ export default function SettingsLocationPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
   const [recenterTrigger, setRecenterTrigger] = useState(0);
   const bootstrappedRef = useRef(false);
 
@@ -108,6 +114,25 @@ export default function SettingsLocationPage() {
     );
   }, []);
 
+  const handlePlaceSelect = useCallback((place: PlaceSuggestion) => {
+    try {
+      const { lat, lng } = normalizeLatLng(place.lat, place.lng);
+      setPosition({ lat, lng });
+      setSelectedLabel(place.label);
+      setRecenterTrigger((n) => n + 1);
+      setSaved(false);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Invalid place coordinates");
+    }
+  }, []);
+
+  const handleMapPick = useCallback((pos: PickerPosition) => {
+    setPosition(pos);
+    setSelectedLabel(null);
+    setSaved(false);
+  }, []);
+
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <header className="sticky top-0 z-20 border-b border-[color:var(--line)] bg-[color:var(--surface-glass)] px-4 py-3 backdrop-blur-xl">
@@ -128,15 +153,30 @@ export default function SettingsLocationPage() {
       </header>
 
       <main className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 px-4 py-4">
-        <LocationPickerMap
-          position={position}
-          onPick={setPosition}
-          recenterTrigger={recenterTrigger}
-        />
+        <div className="relative z-[1000] shrink-0">
+          <PlaceSearchInput
+            onSelect={handlePlaceSelect}
+            placeholder="Search city or address (e.g. Toronto)"
+          />
+        </div>
+
+        <div className="relative z-0">
+          <LocationPickerMap
+            position={position}
+            onPick={handleMapPick}
+            recenterTrigger={recenterTrigger}
+          />
+        </div>
 
         <p className="text-[13px] text-[color:var(--ink-muted)]">
-          Tap anywhere on the map to set your emulated position.
+          Search for a place or tap the map to set your emulated position.
         </p>
+
+        {selectedLabel ? (
+          <p className="line-clamp-3 rounded-xl border border-[color:var(--line)] bg-[color:var(--surface)] px-4 py-2.5 text-[13px] leading-snug text-[color:var(--ink-secondary)]">
+            {selectedLabel}
+          </p>
+        ) : null}
 
         {position ? (
           <div className="rounded-xl border border-[color:var(--line)] bg-[color:var(--surface)] px-4 py-3 font-mono text-[13px] text-[color:var(--ink-secondary)]">
