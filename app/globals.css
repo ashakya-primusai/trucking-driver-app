@@ -1,0 +1,441 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+/* Force-light: only opt in to `dark:` utilities when an explicit `.dark`
+ * ancestor is present (we never set one). Keeps the UI bright regardless
+ * of the user's OS preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Bright, modern palette designed for an at-a-glance logistics UI.
+ * Warm ivory canvas + crisp white surfaces, vibrant brand orange,
+ * sky-blue secondary, plus semantic emerald / amber / red accents.
+ */
+:root {
+  color-scheme: light;
+
+  --canvas: #f6f5f1;
+  --canvas-muted: #ecebe5;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --surface-glass: rgba(255, 255, 255, 0.78);
+
+  --ink: #0b1220;
+  --ink-secondary: #334155;
+  --ink-muted: #64748b;
+  --ink-faint: #94a3b8;
+
+  --line: rgba(15, 23, 42, 0.08);
+  --line-strong: rgba(15, 23, 42, 0.14);
+
+  --accent: #f97316;
+  --accent-bright: #fb923c;
+  --accent-deep: #c2410c;
+  --accent-soft: rgba(249, 115, 22, 0.12);
+
+  --track: #0ea5e9;
+  --track-bright: #38bdf8;
+  --track-soft: rgba(14, 165, 233, 0.12);
+
+  --success: #10b981;
+  --success-soft: rgba(16, 185, 129, 0.12);
+  --warning: #f59e0b;
+  --warning-soft: rgba(245, 158, 11, 0.14);
+  --danger: #dc2626;
+  --danger-soft: rgba(220, 38, 38, 0.1);
+
+  --radius-card: 1.25rem;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -16px rgba(15, 23, 42, 0.18);
+  --shadow-floating: 0 2px 6px rgba(15, 23, 42, 0.06), 0 24px 60px -24px rgba(15, 23, 42, 0.28);
+}
+
+@theme inline {
+  --color-background: var(--canvas);
+  --color-foreground: var(--ink);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html,
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Canvas with subtle warm gradient — avoids flat boredom without going dark. */
+.app-canvas {
+  background-color: var(--canvas);
+  background-image:
+    radial-gradient(ellipse 90% 60% at 0% -10%, rgba(249, 115, 22, 0.10), transparent 60%),
+    radial-gradient(ellipse 80% 55% at 100% 0%, rgba(14, 165, 233, 0.10), transparent 60%),
+    radial-gradient(ellipse 120% 70% at 50% 100%, rgba(255, 255, 255, 0.6), transparent 70%);
+}
+
+.driver-card {
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-card);
+}
+
+/* Segmented OTP entry boxes. */
+.otp-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  border-radius: 14px;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.otp-box.filled {
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.otp-box.active {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.driver-card-glass {
+  border-radius: var(--radius-card);
+  background: var(--surface-glass);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-floating);
+}
+
+.driver-input {
+  border-radius: 0.875rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.driver-input::placeholder { color: var(--ink-muted); }
+
+.driver-input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.driver-btn-primary {
+  border-radius: 0.875rem;
+  background: linear-gradient(160deg, var(--accent-bright) 0%, var(--accent) 60%, var(--accent-deep) 100%);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 6px 18px -8px rgba(249, 115, 22, 0.55);
+  transition: filter 0.15s ease, transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.driver-btn-primary:hover:not(:disabled) { filter: brightness(1.05); }
+.driver-btn-primary:active:not(:disabled) { transform: scale(0.98); }
+.driver-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.driver-btn-ghost {
+  border-radius: 0.75rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--ink-secondary);
+  font-weight: 500;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.driver-btn-ghost:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.driver-btn-track {
+  border-radius: 0.875rem;
+  background: linear-gradient(160deg, var(--track-bright) 0%, var(--track) 100%);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 6px 18px -8px rgba(14, 165, 233, 0.55);
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+.driver-btn-track:hover:not(:disabled) { filter: brightness(1.05); }
+.driver-btn-track:active:not(:disabled) { transform: scale(0.98); }
+.driver-btn-track:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ─── Map markers (Leaflet div icons) ───────────────────────────── */
+
+.driver-map-root { position: relative; height: 100%; width: 100%; }
+
+.driver-map-root .leaflet-container {
+  background: #eef2f6;
+  font-family: inherit;
+  border-radius: inherit;
+}
+
+.driver-map-root .leaflet-control-attribution {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.driver-marker {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+}
+
+.driver-marker .driver-dot {
+  position: absolute;
+  inset: 6px;
+  border-radius: 999px;
+  background: #0ea5e9;
+  box-shadow: 0 0 0 3px #fff, 0 4px 10px rgba(14, 165, 233, 0.45);
+}
+
+.driver-marker .driver-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: rgba(14, 165, 233, 0.3);
+  animation: driver-pulse 1.8s ease-out infinite;
+}
+
+@keyframes driver-pulse {
+  0%   { transform: scale(0.6); opacity: 0.7; }
+  100% { transform: scale(1.8); opacity: 0;   }
+}
+
+.dest-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 44px;
+  pointer-events: none;
+}
+
+.dest-marker .dest-pin {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px 999px 999px 4px;
+  transform: rotate(-45deg);
+  background: linear-gradient(160deg, #fb923c 0%, #f97316 55%, #c2410c 100%);
+  box-shadow: 0 0 0 3px #fff, 0 8px 18px -4px rgba(249, 115, 22, 0.5);
+}
+
+.dest-marker .dest-pin::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  background: #fff;
+  border-radius: 999px;
+}
+
+/* Numbered stop markers for the load-detail map */
+.stop-marker-wrap { pointer-events: auto; }
+
+.stop-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  border: 2px solid var(--ink);
+  box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.3);
+}
+
+.stop-marker.pickup {
+  background: linear-gradient(160deg, var(--track-bright), var(--track));
+  color: #fff;
+  border-color: #fff;
+}
+
+.stop-marker.delivery {
+  background: linear-gradient(160deg, var(--accent-bright), var(--accent));
+  color: #fff;
+  border-color: #fff;
+}
+
+.stop-marker.current {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent),
+              0 6px 18px -6px rgba(249, 115, 22, 0.55);
+}
+
+.stop-marker.completed { opacity: 0.55; }
+
+/* ─── Mobile app shell: bottom nav + sheet ─────────────────────── */
+
+.app-shell {
+  /* Reserve space for the bottom tab bar so content never hides behind it. */
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+}
+
+.bottom-tab-bar {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 40;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  padding: 8px max(env(safe-area-inset-left, 0px), 12px)
+           calc(8px + env(safe-area-inset-bottom, 0px))
+           max(env(safe-area-inset-right, 0px), 12px);
+  background: rgba(255, 255, 255, 0.92);
+  border-top: 1px solid var(--line);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+}
+
+.bottom-tab-bar > .tab-inner {
+  display: flex;
+  width: 100%;
+  max-width: 32rem;
+  margin: 0 auto;
+  gap: 4px;
+}
+
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 4px;
+  border-radius: 14px;
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tab-item.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.tab-item:hover:not(.active) {
+  color: var(--ink-secondary);
+}
+
+.tab-item .tab-icon {
+  width: 22px;
+  height: 22px;
+}
+
+/* Compact load row used on the home list */
+.load-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.15s ease;
+}
+
+.load-row:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+
+.load-row:active { transform: translateY(0); }
+
+.load-row .row-leading {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+/* ─── Bottom sheet on load detail ──────────────────────────────── */
+
+.sheet-root {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 30;
+  background: var(--surface);
+  border-top-left-radius: 28px;
+  border-top-right-radius: 28px;
+  box-shadow: 0 -16px 40px -12px rgba(15, 23, 42, 0.25);
+  border: 1px solid var(--line);
+  border-bottom: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: height 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  touch-action: pan-y;
+  will-change: transform;
+}
+
+.sheet-handle {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 6px;
+  flex-shrink: 0;
+  cursor: grab;
+}
+
+.sheet-handle::after {
+  content: "";
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+
+.sheet-handle:active { cursor: grabbing; }
+
+.sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 18px 24px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Floating round button on the map */
+.map-fab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  width: 42px;
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--line);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.map-fab:hover { background: var(--canvas-muted); }
+.map-fab:active { transform: scale(0.96); }
