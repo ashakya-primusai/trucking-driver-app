@@ -1,8 +1,7 @@
 import { getToken } from "./auth-storage";
 import { normalizeLatLng } from "./coordinates";
 
-const baseUrl =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://trucking.primustechnologiesai.com";
+const baseUrl = "https://trucking.primustechnologiesai.com";
 
 export type ApiSuccess<T> = {
   success: true;
