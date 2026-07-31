@@ -3,6 +3,7 @@ import { normalizeLatLng } from "./coordinates";
 
 const baseUrl = "https://trucking.primustechnologiesai.com";
 
+// const baseUrl = "http://localhost:3001";
 export type ApiSuccess<T> = {
   success: true;
   data: T;
