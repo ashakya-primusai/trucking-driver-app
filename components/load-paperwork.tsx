@@ -93,7 +93,7 @@ export function LoadPaperwork({
               <span>
                 <span className="block text-[15px] font-semibold text-[color:var(--ink)]">{item.label}</span>
                 <span className="block text-[13px] text-amber-900">
-                  {item.enforcement === "block" ? "Required" : "Needed"} · tap to take photo
+                  {item.enforcement === "block" ? "Required" : "Needed"}
                 </span>
               </span>
               <CameraIcon />
@@ -108,11 +108,11 @@ export function LoadPaperwork({
         onClick={() => setPickerOpen(true)}
         className="driver-btn-ghost flex h-12 w-full items-center justify-center gap-2 text-[15px] font-semibold disabled:opacity-50"
       >
-        {uploading ? `Uploading ${uploadingLabel ?? ""}…` : "Add photo or PDF"}
+        {uploading ? `Uploading ${uploadingLabel ?? ""}…` : "+ Add document"}
       </button>
 
       {done ? (
-        <p className="mt-2 text-[14px] font-medium text-emerald-700">{done} uploaded. Dispatch can see it now.</p>
+        <p className="mt-2 text-[14px] font-medium text-emerald-700">✓ {done} uploaded</p>
       ) : null}
       {error ? (
         <p className="mt-2 text-[14px] text-[color:var(--danger)]" role="alert">

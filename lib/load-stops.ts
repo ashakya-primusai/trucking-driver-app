@@ -54,11 +54,11 @@ export function stopTypeLabel(type: string | undefined): string {
 export function actionLabel(action: UpdateLoadStopAction, stop: LoadStop): string {
   switch (action) {
     case "en_route":
-      return `Start driving to ${stopTypeLabel(stop.type).toLowerCase()}`;
+      return "Start driving";
     case "arrived":
-      return "I've arrived";
+      return "I'm here";
     case "completed":
-      return `Finish ${stopTypeLabel(stop.type).toLowerCase()}`;
+      return stop.type === "delivery" ? "Delivered" : stop.type === "pickup" ? "Loaded" : "Done";
     default:
       return "Update";
   }
