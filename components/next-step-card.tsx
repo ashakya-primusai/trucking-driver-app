@@ -41,7 +41,7 @@ export function NextStepCard({ load, onChanged, onSessionExpired, linkToLoad }: 
 
   if (!current) {
     return (
-      <div className="rounded-[var(--radius-card)] border border-[color:var(--line)] bg-[color:var(--surface)] p-5 text-center shadow-[var(--shadow-card)]">
+      <div className="rounded-3xl bg-[color:var(--surface)] p-6 text-center shadow-[var(--shadow-floating)]">
         <p className="text-[17px] font-semibold text-[color:var(--ink)]">✓ All stops done</p>
       </div>
     );
@@ -90,84 +90,75 @@ export function NextStepCard({ load, onChanged, onSessionExpired, linkToLoad }: 
   };
 
   return (
-    <div className="overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--accent)]/30 bg-[color:var(--surface)] shadow-[var(--shadow-card)]">
-      <div className="p-4">
-        <div className="flex items-center justify-between gap-2">
-          <span className="rounded-full bg-[color:var(--accent-soft)] px-2.5 py-1 text-[12px] font-bold text-[color:var(--accent-deep)]">
-            {stopTypeLabel(stop.type)}
+    <div className="rounded-3xl bg-[color:var(--surface)] p-5 shadow-[var(--shadow-floating)]">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[12px] font-bold uppercase tracking-[0.14em] text-[color:var(--accent-deep)]">
+          {stopTypeLabel(stop.type)}
+        </span>
+        {sched && sched.minutesLate > 0 ? (
+          <span className="rounded-full bg-red-500/12 px-2.5 py-1 text-[12px] font-semibold text-red-700">
+            {formatMinutesLate(sched.minutesLate)}
           </span>
-          {linkToLoad ? (
-            <Link href={`/load/${load._id}`} className="truncate font-mono text-[12px] text-[color:var(--ink-muted)] no-underline">
-              {loadCode(load)} ›
-            </Link>
-          ) : null}
-        </div>
+        ) : sched ? (
+          <ScheduleStatusPill status={sched.status} />
+        ) : null}
+      </div>
 
-        <p className="mt-3 text-[22px] font-semibold leading-tight text-[color:var(--ink)]">
-          {placeShort(stop)}
+      <p className="mt-1.5 text-[26px] font-bold leading-tight tracking-tight text-[color:var(--ink)]">
+        {placeShort(stop)}
+      </p>
+      <p className="mt-1 truncate text-[15px] text-[color:var(--ink-muted)]">
+        {[lines[0] !== placeShort(stop) ? lines[0] : null, due ?? eta].filter(Boolean).join(" · ")}
+      </p>
+
+      {linkToLoad ? (
+        <Link href={`/load/${load._id}`} className="mt-1 inline-block font-mono text-[12px] text-[color:var(--ink-faint)] no-underline">
+          {loadCode(load)} ›
+        </Link>
+      ) : null}
+
+      {stop.notes ? (
+        <p className="mt-3 line-clamp-2 rounded-xl bg-[color:var(--canvas)] px-3 py-2 text-[13px] text-[color:var(--ink-secondary)]">
+          {stop.notes}
         </p>
-        {lines[0] && lines[0] !== placeShort(stop) ? (
-          <p className="mt-0.5 truncate text-[14px] text-[color:var(--ink-muted)]">{lines[0]}</p>
-        ) : null}
+      ) : null}
 
-        {due || eta ? (
-          <div className="mt-3 flex items-center gap-2 text-[14px] text-[color:var(--ink-secondary)]">
-            <ClockIcon />
-            <span className="font-semibold text-[color:var(--ink)]">{due ?? eta}</span>
-            {sched && sched.minutesLate > 0 ? (
-              <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[12px] font-semibold text-red-700">
-                {formatMinutesLate(sched.minutesLate)}
-              </span>
-            ) : sched ? (
-              <ScheduleStatusPill status={sched.status} />
-            ) : null}
-          </div>
+      <div className="mt-5 flex gap-2.5">
+        {navUrl ? (
+          <a href={navUrl} target="_blank" rel="noopener noreferrer" aria-label="Directions" className={ICON_BTN}>
+            <NavIcon />
+          </a>
         ) : null}
-
-        {stop.notes ? (
-          <p className="mt-2 line-clamp-2 text-[13px] text-[color:var(--ink-muted)]">{stop.notes}</p>
+        {stop.contactPhone ? (
+          <a href={`tel:${stop.contactPhone}`} aria-label={`Call ${stop.contactName || "site"}`} className={ICON_BTN}>
+            <PhoneIcon />
+          </a>
         ) : null}
-
         {needsScan ? (
           <Link
             href={scanPageHref(load._id, num)}
-            className="driver-btn-primary mt-4 flex h-14 w-full items-center justify-center text-[16px] font-semibold no-underline"
+            className="driver-btn-primary flex h-14 flex-1 items-center justify-center text-[17px] font-semibold no-underline"
           >
-            Scan pieces ({scanned}/{packages.length})
+            Scan {scanned}/{packages.length}
           </Link>
         ) : action ? (
           <button
             type="button"
             disabled={busy}
             onClick={onPrimary}
-            className={`${action === "en_route" ? "driver-btn-track" : "driver-btn-primary"} mt-4 flex h-14 w-full items-center justify-center gap-2 text-[16px] font-semibold`}
+            className={`${action === "en_route" ? "driver-btn-track" : "driver-btn-primary"} flex h-14 flex-1 items-center justify-center gap-2 text-[17px] font-semibold`}
           >
             {busy ? <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : null}
             {busy ? "Saving…" : actionLabel(action, stop)}
           </button>
         ) : null}
-
-        {error ? (
-          <p className="mt-3 rounded-xl bg-[color:var(--danger-soft)] px-3 py-2 text-[14px] text-[color:var(--danger)]" role="alert">
-            {error}
-          </p>
-        ) : null}
-
-        {navUrl || stop.contactPhone ? (
-          <div className="mt-3 flex gap-2">
-            {navUrl ? (
-              <a href={navUrl} target="_blank" rel="noopener noreferrer" className="driver-btn-ghost flex h-12 flex-1 items-center justify-center gap-2 text-[15px] font-semibold no-underline">
-                <NavIcon /> Go
-              </a>
-            ) : null}
-            {stop.contactPhone ? (
-              <a href={`tel:${stop.contactPhone}`} className="driver-btn-ghost flex h-12 flex-1 items-center justify-center gap-2 text-[15px] font-semibold no-underline">
-                <PhoneIcon /> Call
-              </a>
-            ) : null}
-          </div>
-        ) : null}
       </div>
+
+      {error ? (
+        <p className="mt-3 rounded-xl bg-[color:var(--danger-soft)] px-3 py-2 text-[14px] text-[color:var(--danger)]" role="alert">
+          {error}
+        </p>
+      ) : null}
 
       <ActionSheet open={signOpen} title="Who received the load?" onClose={() => setSignOpen(false)}>
         <form
@@ -197,17 +188,12 @@ export function NextStepCard({ load, onChanged, onSessionExpired, linkToLoad }: 
   );
 }
 
-function ClockIcon() {
-  return (
-    <svg className="h-4 w-4 shrink-0 text-[color:var(--ink-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
-    </svg>
-  );
-}
+const ICON_BTN =
+  "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--canvas)] text-[color:var(--ink)] no-underline active:scale-95";
 
 function NavIcon() {
   return (
-    <svg className="h-[18px] w-[18px]" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <svg className="h-[22px] w-[22px]" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
       <path d="M2.5 10.4 21 3l-7.4 18.5-2.6-7.9z" />
     </svg>
   );
@@ -215,7 +201,7 @@ function NavIcon() {
 
 function PhoneIcon() {
   return (
-    <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+    <svg className="h-[22px] w-[22px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
     </svg>
   );

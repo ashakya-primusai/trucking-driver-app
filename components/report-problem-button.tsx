@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import { reportLoadIssue } from "@/lib/driver-api";
 import { ActionSheet } from "@/components/action-sheet";
+import { MenuRow } from "@/components/menu-row";
 
 const QUICK_REASONS = [
   "Stuck in traffic",
@@ -46,19 +47,16 @@ export function ReportProblemButton({
 
   return (
     <>
-      <button
-        type="button"
+      <MenuRow
+        icon="⚠️"
+        label="Report a problem"
+        detail={sent ? "Sent ✓" : null}
+        tone="danger"
         onClick={() => {
           setSent(false);
           setOpen(true);
         }}
-        className="mx-auto flex items-center gap-1.5 py-2 text-[14px] font-semibold text-[color:var(--danger)]"
-      >
-        ⚠ Report a problem
-      </button>
-      {sent ? (
-        <p className="mt-2 text-center text-[14px] font-medium text-emerald-700">Dispatch has been alerted.</p>
-      ) : null}
+      />
 
       <ActionSheet open={open} title="What's wrong?" onClose={() => setOpen(false)}>
         <div className="grid grid-cols-2 gap-2">

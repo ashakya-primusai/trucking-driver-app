@@ -11,6 +11,7 @@ import { activeStop, loadCode, loadRouteLabel } from "@/lib/load-stops";
 import { primaryLoadScheduleStatus } from "@/lib/schedule-status";
 import { useSignOut } from "@/lib/use-sign-out";
 import { BottomTabNav } from "@/components/bottom-tab-nav";
+import { LoadMap } from "@/components/load-map";
 import { Logo } from "@/components/Logo";
 import { NextStepCard } from "@/components/next-step-card";
 import { ScheduleStatusPill } from "@/components/schedule-status-pill";
@@ -110,7 +111,9 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-5 px-4 py-5">
+      {current ? <LoadMap load={current} className="h-[280px]" /> : null}
+
+      <main className={`relative z-10 mx-auto flex w-full max-w-lg flex-1 flex-col gap-5 px-4 pb-5 ${current ? "-mt-8" : "pt-5"}`}>
         {error ? (
           <p className="rounded-2xl bg-[color:var(--danger-soft)] px-4 py-3 text-[14px] text-[color:var(--danger)]" role="alert">
             {error}
@@ -132,9 +135,9 @@ export default function HomePage() {
             <NextStepCard load={current} onChanged={load} onSessionExpired={signOut} linkToLoad />
             <Link
               href={`/load/${current._id}`}
-              className="mt-2 block text-center text-[14px] font-semibold text-[color:var(--accent-deep)] no-underline"
+              className="mt-3 flex h-12 items-center justify-center rounded-2xl bg-[color:var(--surface)] text-[15px] font-semibold text-[color:var(--ink)] no-underline"
             >
-              Details ›
+              Stops, documents &amp; help ›
             </Link>
           </section>
         ) : null}

@@ -4,8 +4,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchLoadDocuments, LoadDocumentsResponse, uploadLoadDocument } from "@/lib/driver-api";
 import { prepareFileForUpload } from "@/lib/file-upload";
 import { ActionSheet } from "@/components/action-sheet";
+import { MenuRow } from "@/components/menu-row";
 
-/** Paperwork for one load: what's still needed, one-tap photo upload, and what's on file. */
+/** "Proof of Delivery (POD)" → "POD"; labels without a short form stay as-is. */
+function shortLabel(label: string): string {
+  return label.match(/\(([^)]+)\)\s*$/)?.[1] ?? label;
+}
+
+/**
+ * Documents row for a load. Tapping it opens a sheet with what's still needed
+ * (one tap → camera), what's on file, and "Add other".
+ */
 export function LoadPaperwork({
   loadId,
   onSessionExpired,
@@ -15,7 +24,7 @@ export function LoadPaperwork({
 }) {
   const [data, setData] = useState<LoadDocumentsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [view, setView] = useState<"closed" | "list" | "pick">("closed");
   const [uploading, setUploading] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -33,7 +42,7 @@ export function LoadPaperwork({
     let cancelled = false;
     fetchLoadDocuments(loadId)
       .then((d) => !cancelled && setData(d))
-      .catch((e) => !cancelled && handleError(e, "Could not load paperwork"));
+      .catch((e) => !cancelled && handleError(e, "Could not load documents"));
     return () => {
       cancelled = true;
     };
@@ -41,7 +50,7 @@ export function LoadPaperwork({
 
   const startUpload = (slug: string) => {
     pendingType.current = slug;
-    setPickerOpen(false);
+    setView("list");
     setError(null);
     setDone(null);
     fileRef.current?.click();
@@ -65,22 +74,18 @@ export function LoadPaperwork({
   };
 
   const needed = (data?.checklist ?? []).filter((c) => c.state === "missing");
-  const uploadingLabel = uploading ? data?.uploadTypes.find((t) => t.slug === uploading)?.label : null;
+  const docs = data?.documents ?? [];
+
+  const detail = uploading
+    ? "Uploading…"
+    : needed.length > 0
+      ? `${shortLabel(needed[0].label)} needed`
+      : docs.length > 0
+        ? String(docs.length)
+        : null;
 
   return (
-    <section>
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-[13px] font-semibold uppercase tracking-wide text-[color:var(--ink-muted)]">Documents</h2>
-        <button
-          type="button"
-          disabled={!!uploading || !data}
-          onClick={() => setPickerOpen(true)}
-          className="text-[14px] font-semibold text-[color:var(--accent-deep)] disabled:opacity-50"
-        >
-          {uploading ? "Uploading…" : "+ Add"}
-        </button>
-      </div>
-
+    <>
       <input
         ref={fileRef}
         type="file"
@@ -90,83 +95,83 @@ export function LoadPaperwork({
         onChange={(e) => void onFile(e.target.files?.[0])}
       />
 
-      {needed.length > 0 ? (
-        <div className="mb-3 flex flex-col gap-2">
+      <MenuRow
+        icon="📄"
+        label="Documents"
+        detail={detail}
+        tone={needed.length > 0 && !uploading ? "warning" : "default"}
+        onClick={() => setView("list")}
+      />
+
+      <ActionSheet open={view === "list"} title="Documents" onClose={() => setView("closed")}>
+        <div className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto">
           {needed.map((item) => (
             <button
               key={`${item.stage}-${item.slug}`}
               type="button"
               disabled={!!uploading}
               onClick={() => startUpload(item.slug)}
-              className="flex items-center justify-between gap-3 rounded-2xl border border-amber-400/40 bg-[color:var(--warning-soft)] px-4 py-3 text-left disabled:opacity-50"
+              className="flex items-center gap-3 rounded-2xl bg-[color:var(--warning-soft)] px-4 py-3.5 text-left disabled:opacity-50"
             >
-              <span>
-                <span className="block text-[15px] font-semibold text-[color:var(--ink)]">{item.label}</span>
-                <span className="block text-[13px] text-amber-900">
-                  {item.enforcement === "block" ? "Required" : "Needed"}
-                </span>
+              <span className="text-[22px]" aria-hidden>📷</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[16px] font-semibold text-[color:var(--ink)]">{item.label}</span>
+                <span className="block text-[13px] text-amber-900">Tap to take a photo</span>
               </span>
-              <CameraIcon />
             </button>
           ))}
-        </div>
-      ) : null}
 
-      {uploadingLabel ? (
-        <p className="text-[14px] text-[color:var(--ink-muted)]">Uploading {uploadingLabel}…</p>
-      ) : null}
-      {done ? (
-        <p className="mt-2 text-[14px] font-medium text-emerald-700">✓ {done} uploaded</p>
-      ) : null}
-      {error ? (
-        <p className="mt-2 text-[14px] text-[color:var(--danger)]" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {data && data.documents.length > 0 ? (
-        <ul className="mt-3 divide-y divide-[color:var(--line)] overflow-hidden rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)]">
-          {data.documents.map((d) => (
-            <li key={d._id} className="flex items-center justify-between gap-3 px-4 py-3">
-              <span className="min-w-0">
-                <span className="block truncate text-[14px] font-medium text-[color:var(--ink)]">{d.label}</span>
+          {docs.map((d) => (
+            <div key={d._id} className="flex items-center gap-3 rounded-2xl bg-[color:var(--canvas)] px-4 py-3">
+              <span className="text-[18px]" aria-hidden>{d.rejected ? "⚠️" : "✅"}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[15px] font-medium text-[color:var(--ink)]">{d.label}</span>
                 {d.rejected ? (
                   <span className="block text-[12px] text-[color:var(--danger)]">
-                    Rejected{d.rejectedReason ? ` · ${d.rejectedReason}` : ""} — please re-upload
+                    Rejected{d.rejectedReason ? ` · ${d.rejectedReason}` : ""}
                   </span>
                 ) : null}
               </span>
-              <span className="shrink-0 text-[12px] text-[color:var(--ink-muted)]">
-                {d.approved ? "Approved" : d.rejected ? "" : "On file"}
-              </span>
-            </li>
+            </div>
           ))}
-        </ul>
-      ) : null}
 
-      <ActionSheet open={pickerOpen} title="What are you uploading?" onClose={() => setPickerOpen(false)}>
-        <div className="grid max-h-[55vh] grid-cols-1 gap-2 overflow-y-auto">
+          {needed.length === 0 && docs.length === 0 && data ? (
+            <p className="py-4 text-center text-[15px] text-[color:var(--ink-muted)]">Nothing uploaded yet</p>
+          ) : null}
+        </div>
+
+        {uploading ? <p className="mt-3 text-[14px] text-[color:var(--ink-muted)]">Uploading…</p> : null}
+        {done ? <p className="mt-3 text-[14px] font-medium text-emerald-700">✓ {done} uploaded</p> : null}
+        {error ? (
+          <p className="mt-3 text-[14px] text-[color:var(--danger)]" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        <button
+          type="button"
+          disabled={!!uploading || !data}
+          onClick={() => setView("pick")}
+          className="driver-btn-ghost mt-4 flex h-14 w-full items-center justify-center text-[16px] font-semibold disabled:opacity-50"
+        >
+          + Add other document
+        </button>
+      </ActionSheet>
+
+      <ActionSheet open={view === "pick"} title="What is it?" onClose={() => setView("list")}>
+        <div className="grid max-h-[60vh] grid-cols-2 gap-2 overflow-y-auto">
           {(data?.uploadTypes ?? []).map((t) => (
             <button
               key={t.slug}
               type="button"
               onClick={() => startUpload(t.slug)}
-              className="rounded-2xl border border-[color:var(--line)] px-4 py-3.5 text-left text-[15px] font-medium text-[color:var(--ink)] active:bg-[color:var(--canvas-muted)]"
+              className="rounded-2xl bg-[color:var(--canvas)] px-3 py-4 text-left text-[15px] font-medium text-[color:var(--ink)] active:scale-[0.98]"
             >
               {t.label}
             </button>
           ))}
         </div>
       </ActionSheet>
-    </section>
-  );
-}
-
-function CameraIcon() {
-  return (
-    <svg className="h-6 w-6 shrink-0 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
-    </svg>
+    </>
   );
 }

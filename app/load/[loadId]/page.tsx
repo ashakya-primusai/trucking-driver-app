@@ -1,43 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getToken } from "@/lib/auth-storage";
-import { AssignedLoad, fetchLoadRoute, fetchMyLoads, LoadStop } from "@/lib/driver-api";
-import { useLocationTracking } from "@/lib/location-tracking-context";
+import { AssignedLoad, fetchMyLoads, LoadStop } from "@/lib/driver-api";
 import { activeStop, loadCode, placeShort, sortedStops, stopTypeLabel } from "@/lib/load-stops";
-import { primaryLoadScheduleStatus } from "@/lib/schedule-status";
+import { findStopSchedule } from "@/lib/schedule-status";
 import { useSignOut } from "@/lib/use-sign-out";
+import { LoadMap } from "@/components/load-map";
 import { LoadPaperwork } from "@/components/load-paperwork";
 import { NextStepCard } from "@/components/next-step-card";
 import { ReportProblemButton } from "@/components/report-problem-button";
-import { ScheduleStatusPill } from "@/components/schedule-status-pill";
-import type { StopMarker } from "@/components/load-stops-map";
-
-const LoadStopsMap = dynamic(() => import("@/components/load-stops-map"), {
-  ssr: false,
-  loading: () => <div className="h-full w-full animate-pulse bg-[color:var(--canvas-muted)]" />,
-});
-
-function markerType(type: string | undefined): StopMarker["type"] {
-  return type === "pickup" || type === "delivery" || type === "warehouse" ? type : "stop";
-}
-
-function markerStatus(status: string | undefined): StopMarker["status"] {
-  switch (status) {
-    case "en_route":
-    case "arrived":
-    case "completed":
-    case "skipped":
-    case "failed":
-      return status;
-    default:
-      return "pending";
-  }
-}
+import { MenuRow } from "@/components/menu-row";
 
 function stopDot(stop: LoadStop): string {
   if (stop.stopStatus === "completed") return "bg-emerald-600";
@@ -49,12 +25,10 @@ export default function LoadDetailPage() {
   const { loadId } = useParams<{ loadId: string }>();
   const router = useRouter();
   const signOut = useSignOut();
-  const { lastPosition } = useLocationTracking();
 
   const [load, setLoad] = useState<AssignedLoad | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [routePath, setRoutePath] = useState<[number, number][] | undefined>(undefined);
 
   const apply = useCallback(
     (p: Promise<{ data: { loads: AssignedLoad[] } }>) =>
@@ -82,85 +56,36 @@ export default function LoadDetailPage() {
     void apply(fetchMyLoads());
   }, [apply, router]);
 
-  useEffect(() => {
-    if (!loadId || !getToken()) return;
-    let cancelled = false;
-    fetchLoadRoute(loadId)
-      .then((data) => {
-        if (cancelled || data?.status !== "ready" || !data.routes?.length) return;
-        const primary =
-          data.assignedRouteIndex != null && data.routes[data.assignedRouteIndex]
-            ? data.routes[data.assignedRouteIndex]
-            : data.routes.find((r) => r.primary) ?? data.routes[0];
-        if (primary?.geometry?.coordinates?.length) setRoutePath(primary.geometry.coordinates);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [loadId]);
-
   const stops = useMemo(() => sortedStops(load), [load]);
   const current = activeStop(load);
 
-  const markers: StopMarker[] = useMemo(
-    () =>
-      stops.flatMap(({ stop, num }) => {
-        const [lng, lat] = stop.coordinates ?? [NaN, NaN];
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return [];
-        return [
-          {
-            id: String(num),
-            position: { lat, lng },
-            number: num,
-            type: markerType(stop.type),
-            status: markerStatus(stop.stopStatus),
-            isCurrent: current?.num === num,
-            label: placeShort(stop),
-          },
-        ];
-      }),
-    [stops, current?.num]
-  );
-
-  const fitKey = markers.map((m) => m.id).join("|") + (lastPosition ? "+d" : "") + (routePath ? "+r" : "");
   // Backend appends "Stuck reported (driver): …" notes for dispatch — the driver already knows.
   const instructions = (load?.specialInstructions ?? "")
-    .split(/\s*Stuck reported \(driver\):[^\n]*?(?=Stuck reported \(driver\):|$)/)
+    .split(/\n+/)
+    .filter((line) => !line.trim().startsWith("Stuck reported (driver):"))
     .join(" ")
     .trim();
-  const done = stops.filter(({ stop }) => stop.stopStatus === "completed" || stop.stopStatus === "skipped").length;
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-[color:var(--canvas)]">
-      <header className="sticky top-0 z-30 border-b border-[color:var(--line)] bg-[color:var(--surface-glass)] px-4 py-3 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-lg items-center gap-3">
-          <Link
-            href="/home"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[color:var(--line)] bg-white text-[20px] text-[color:var(--ink)] no-underline"
-            aria-label="Back"
-          >
-            ‹
-          </Link>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-mono text-[15px] font-semibold text-[color:var(--ink)]">
-              {load ? loadCode(load) : "Load"}
-            </p>
-            <p className="truncate text-[12px] text-[color:var(--ink-muted)]">
-              {stops.length} stops · {done} done{load?.customerName ? ` · ${load.customerName}` : ""}
-            </p>
-          </div>
-          {load?.scheduleSummary ? <ScheduleStatusPill status={primaryLoadScheduleStatus(load.scheduleSummary)} /> : null}
-        </div>
-      </header>
+      <LoadMap load={load} className="h-[300px]">
+        <Link
+          href="/home"
+          aria-label="Back"
+          className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-white text-[22px] text-[color:var(--ink)] no-underline shadow-[var(--shadow-card)]"
+        >
+          ‹
+        </Link>
+        {load ? (
+          <span className="pointer-events-auto truncate rounded-full bg-white px-3.5 py-2 font-mono text-[13px] font-semibold text-[color:var(--ink)] shadow-[var(--shadow-card)]">
+            {loadCode(load)}
+          </span>
+        ) : null}
+      </LoadMap>
 
-      <div className="relative h-[220px] w-full shrink-0 border-b border-[color:var(--line)]">
-        <LoadStopsMap driver={lastPosition} stops={markers} routePath={routePath} fitKey={fitKey} />
-      </div>
-
-      <main className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 px-4 py-5 pb-10">
+      <main className="relative z-10 mx-auto -mt-8 flex w-full max-w-lg flex-1 flex-col gap-4 px-4 pb-10">
         {loading && !load ? (
-          <div className="flex justify-center py-12">
+          <div className="flex justify-center rounded-3xl bg-[color:var(--surface)] py-12 shadow-[var(--shadow-floating)]">
             <span className="h-7 w-7 animate-spin rounded-full border-2 border-[color:var(--line)] border-t-[color:var(--accent)]" />
           </div>
         ) : null}
@@ -176,37 +101,44 @@ export default function LoadDetailPage() {
             <NextStepCard load={load} onChanged={refresh} onSessionExpired={signOut} />
 
             {instructions ? (
-              <p className="flex gap-2 text-[14px] leading-snug text-[color:var(--ink-secondary)]">
+              <div className="flex gap-3 rounded-2xl bg-[color:var(--surface)] px-4 py-3.5 text-[14px] leading-snug text-[color:var(--ink-secondary)]">
                 <span aria-hidden>📝</span>
-                {instructions}
-              </p>
+                <span>{instructions}</span>
+              </div>
             ) : null}
 
-            <section>
-              <div className="mb-2 flex items-center justify-between">
-                <h2 className="text-[13px] font-semibold uppercase tracking-wide text-[color:var(--ink-muted)]">Route</h2>
-                <Link href={`/plan?load=${load._id}`} className="text-[14px] font-semibold text-[color:var(--accent-deep)] no-underline">
-                  Plan ›
-                </Link>
-              </div>
-              <ol className="flex flex-col gap-3">
-                {stops.map(({ stop, num }) => (
-                  <li key={num} className="flex items-center gap-3">
-                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white ${stopDot(stop)}`}>
+            <ol className="rounded-2xl bg-[color:var(--surface)] px-4 py-2">
+              {stops.map(({ stop, num }, i) => {
+                const sched = findStopSchedule(load.scheduleSummary, num);
+                const when = sched?.scheduledDisplay ?? ([stop.date, stop.time].filter(Boolean).join(" ") || null);
+                const isCurrent = current?.num === num;
+                const isLast = i === stops.length - 1;
+                return (
+                  <li key={num} className="relative flex gap-3 py-2.5">
+                    {!isLast ? (
+                      <span className="absolute left-[13px] top-[38px] bottom-[-10px] w-0.5 bg-[color:var(--line-strong)]" aria-hidden />
+                    ) : null}
+                    <span className={`relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white ${stopDot(stop)}`}>
                       {stop.stopStatus === "completed" ? "✓" : num}
                     </span>
-                    <span className={`min-w-0 flex-1 truncate text-[15px] ${current?.num === num ? "font-semibold text-[color:var(--ink)]" : "text-[color:var(--ink-secondary)]"}`}>
-                      {placeShort(stop)}
-                    </span>
-                    <span className="shrink-0 text-[13px] text-[color:var(--ink-muted)]">{stopTypeLabel(stop.type)}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className={`truncate text-[16px] ${isCurrent ? "font-semibold text-[color:var(--ink)]" : "text-[color:var(--ink-secondary)]"}`}>
+                        {placeShort(stop)}
+                      </p>
+                      <p className="truncate text-[13px] text-[color:var(--ink-muted)]">
+                        {[stopTypeLabel(stop.type), when].filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
                   </li>
-                ))}
-              </ol>
-            </section>
+                );
+              })}
+            </ol>
 
-            <LoadPaperwork loadId={load._id} onSessionExpired={signOut} />
-
-            <ReportProblemButton loadId={load._id} onSessionExpired={signOut} />
+            <div className="divide-y divide-[color:var(--line)] overflow-hidden rounded-2xl bg-[color:var(--surface)]">
+              <LoadPaperwork loadId={load._id} onSessionExpired={signOut} />
+              <MenuRow icon="🗺️" label="Trip plan" detail="Fuel & ETAs" href={`/plan?load=${load._id}`} />
+              <ReportProblemButton loadId={load._id} onSessionExpired={signOut} />
+            </div>
           </>
         ) : null}
       </main>
