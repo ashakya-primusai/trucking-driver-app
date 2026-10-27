@@ -3,6 +3,7 @@ import { normalizeLatLng } from "./coordinates";
 
 const baseUrl = "https://trucking.primustechnologiesai.com";
 
+// const baseUrl = "http://localhost:3001";
 export type ApiSuccess<T> = {
   success: true;
   data: T;
@@ -606,11 +607,14 @@ export async function markAllDriverNotificationsRead() {
   return body as ApiSuccess<{ modifiedCount: number }>;
 }
 
+/** Mirrors SDS_backend/src/shared/routing ROUTING_PROVIDER_NAMES. */
+export type RoutingProvider = "pcmiler" | "mapbox" | "tomtom";
+
 export type NavRouteResult = {
   geometry: { type: "LineString"; coordinates: [number, number][] };
   durationSec: number;
   distanceMeters: number;
-  provider: "tomtom" | "mapbox";
+  provider: RoutingProvider;
 };
 
 export async function fetchNavRoute(
@@ -644,6 +648,7 @@ export type LoadRouteData = {
   _id: string;
   load: string;
   status: "pending" | "ready" | "failed" | "skipped";
+  assignedRouteIndex: number | null;
   routes: Array<{
     primary: boolean;
     geometry: LoadRouteGeometry;
@@ -745,4 +750,120 @@ export async function updateDriverLocation(lng: number, lat: number, speedKmh?: 
     throw new Error(msg);
   }
   return parsed as ApiSuccess<UpdateDriverLocationResponse>;
+}
+
+/** Shared fetch for driver-app JSON endpoints: auth header, 401 → SESSION_EXPIRED, error message unwrap. */
+async function driverRequest<T>(path: string, init?: { method?: string; body?: unknown }): Promise<T> {
+  const token = getToken();
+  if (!token) throw new Error("Not signed in");
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/json",
+  };
+  if (init?.body !== undefined) headers["Content-Type"] = "application/json";
+
+  const res = await fetch(driverAppPath(path), {
+    method: init?.method ?? "GET",
+    headers,
+    body: init?.body !== undefined ? JSON.stringify(init.body) : undefined,
+  });
+  const parsed = (await parseJson(res)) as ApiSuccess<T> | ApiErrorBody | { message?: string } | null;
+
+  if (res.status === 401) throw new Error("SESSION_EXPIRED");
+
+  if (!res.ok || !parsed || (parsed as ApiErrorBody).success === false) {
+    const plain = parsed as { message?: string } | null;
+    const msg =
+      parsed && (parsed as ApiErrorBody).success === false
+        ? (parsed as ApiErrorBody).error.message
+        : plain?.message || `Request failed (${res.status})`;
+    throw new Error(msg);
+  }
+  return (parsed as ApiSuccess<T>).data;
+}
+
+export type DocumentChecklistItem = {
+  stage: "booking" | "dispatch" | "pickup" | "delivery" | "closeout";
+  slug: string;
+  label: string;
+  enforcement: "off" | "warn" | "block";
+  present: boolean;
+  state: "done" | "missing" | "upcoming";
+};
+
+export type DriverLoadDocument = {
+  _id: string;
+  name: string;
+  documentType: string;
+  label: string;
+  uploadedBy: "customer" | "tenant_user" | "driver";
+  approved: boolean;
+  rejected: boolean;
+  rejectedReason: string | null;
+  createdAt: string | null;
+};
+
+export type LoadDocumentsResponse = {
+  checklist: DocumentChecklistItem[];
+  uploadTypes: Array<{ slug: string; label: string }>;
+  documents: DriverLoadDocument[];
+};
+
+/** GET /driver-app/loads/:loadId/documents — what's on file + what's still needed. */
+export function fetchLoadDocuments(loadId: string) {
+  return driverRequest<LoadDocumentsResponse>(`/loads/${encodeURIComponent(loadId)}/documents`);
+}
+
+/** POST /driver-app/loads/:loadId/documents — base64 photo/PDF upload. */
+export function uploadLoadDocument(
+  loadId: string,
+  doc: { documentType: string; filename: string; contentType: string; dataBase64: string }
+) {
+  return driverRequest<LoadDocumentsResponse>(`/loads/${encodeURIComponent(loadId)}/documents`, {
+    method: "POST",
+    body: doc,
+  });
+}
+
+/** POST /driver-app/loads/:loadId/report-issue — flags the load as stuck for dispatch. */
+export function reportLoadIssue(loadId: string, reason: string) {
+  return driverRequest<unknown>(`/loads/${encodeURIComponent(loadId)}/report-issue`, {
+    method: "POST",
+    body: { reason },
+  });
+}
+
+export type FuelStop = {
+  stopNumber: number;
+  atKm: number;
+  inState: string;
+  inStateName: string;
+  litresNeeded: number;
+  estimatedCostUSD: number;
+};
+
+export type LoadPlan = {
+  loadId: string;
+  route: {
+    origin: string | null;
+    destination: string | null;
+    distanceMeters: number | null;
+    durationSec: number | null;
+    trafficDelaySec: number;
+  } | null;
+  fuel: {
+    totalDistanceKm: number;
+    totalFuelLitres: number;
+    totalFuelCostUSD: number;
+    canCompleteWithoutRefueling: boolean;
+    safeRangeKm: number;
+    stops: FuelStop[];
+  } | null;
+  scheduleSummary: ScheduleSummary | null;
+};
+
+/** GET /driver-app/loads/:loadId/plan — route totals, fuel stops, stop ETAs. */
+export function fetchLoadPlan(loadId: string) {
+  return driverRequest<LoadPlan>(`/loads/${encodeURIComponent(loadId)}/plan`);
 }

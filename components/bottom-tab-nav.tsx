@@ -10,7 +10,7 @@ import {
   type FirebaseDriverNotificationEvent,
 } from "@/lib/firebase-realtime";
 
-type TabId = "loads" | "notifications" | "chat";
+type TabId = "loads" | "plan" | "notifications" | "chat";
 
 interface TabDef {
   id: TabId;
@@ -21,7 +21,8 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-  { id: "loads", label: "Loads", href: "/home", matchPrefix: ["/home", "/load"], Icon: TruckIcon },
+  { id: "loads", label: "Today", href: "/home", matchPrefix: ["/home", "/load"], Icon: TruckIcon },
+  { id: "plan", label: "Plan", href: "/plan", matchPrefix: ["/plan"], Icon: MapIcon },
   { id: "notifications", label: "Alerts", href: "/notifications", matchPrefix: ["/notifications"], Icon: BellIcon },
   { id: "chat", label: "Bella", href: "/chat", matchPrefix: ["/chat"], Icon: ChatIcon },
 ];
@@ -94,6 +95,25 @@ function TruckIcon({ active }: { active?: boolean }) {
       <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H18l3 3v2.25h-7.5z" />
       <circle cx="7.5" cy="17.25" r="1.75" />
       <circle cx="17.25" cy="17.25" r="1.75" />
+    </svg>
+  );
+}
+
+function MapIcon({ active }: { active?: boolean }) {
+  return (
+    <svg
+      className="tab-icon"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={active ? 2.2 : 1.7}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z"
+      />
     </svg>
   );
 }

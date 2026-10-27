@@ -9,10 +9,14 @@ import {
   getEmulatedLocation,
   isEmulationEnabled,
 } from "@/lib/location-emulation";
+import { useSignOut } from "@/lib/use-sign-out";
+import { useLocationTracking } from "@/lib/location-tracking-context";
 import { BottomTabNav } from "@/components/bottom-tab-nav";
 
 export default function SettingsPage() {
   const router = useRouter();
+  const signOut = useSignOut();
+  const { isTracking, startTracking, stopTracking } = useLocationTracking();
   const [emulationOn, setEmulationOn] = useState(false);
   const [emulated, setEmulated] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -47,6 +51,33 @@ export default function SettingsPage() {
       </header>
 
       <main className="mx-auto w-full max-w-lg flex-1 px-4 py-4">
+        <ul className="mb-6 divide-y divide-[color:var(--line)] overflow-hidden rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)]">
+          <li>
+            <button
+              type="button"
+              onClick={() => (isTracking ? stopTracking() : startTracking())}
+              className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left"
+            >
+              <span>
+                <span className="block text-[15px] font-medium text-[color:var(--ink)]">Share my location</span>
+                <span className="block text-[13px] text-[color:var(--ink-muted)]">Needed for ETAs and arrival check-in</span>
+              </span>
+              <span className={`text-[13px] font-semibold ${isTracking ? "text-[color:var(--track)]" : "text-[color:var(--ink-muted)]"}`}>
+                {isTracking ? "On" : "Off"}
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              type="button"
+              onClick={signOut}
+              className="w-full px-4 py-4 text-left text-[15px] font-medium text-[color:var(--danger)]"
+            >
+              Log out
+            </button>
+          </li>
+        </ul>
+
         <p className="mb-3 text-[12px] font-medium uppercase tracking-[0.12em] text-[color:var(--ink-muted)]">
           Developer
         </p>
