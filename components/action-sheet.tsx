@@ -1,5 +1,6 @@
 // Imported only from client components, so no "use client" boundary here.
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 
 /** Simple modal sheet that slides up from the bottom. Tap the backdrop or Cancel to close. */
 export function ActionSheet({
@@ -20,9 +21,11 @@ export function ActionSheet({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  // Portal to <body> so the sheet sits above the bottom tab bar, whatever stacking
+  // context the caller lives in (home/load pages put content in a z-10 layer).
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal aria-label={title}>
       <button
         type="button"
@@ -30,7 +33,7 @@ export function ActionSheet({
         aria-label="Close"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-lg rounded-t-3xl bg-[color:var(--surface)] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 shadow-[var(--shadow-floating)]">
+      <div className="relative w-full max-w-lg rounded-t-3xl bg-[color:var(--surface)] px-5 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-4 shadow-[var(--shadow-floating)]">
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[color:var(--line-strong)]" aria-hidden />
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-[17px] font-semibold text-[color:var(--ink)]">{title}</h2>
@@ -44,6 +47,7 @@ export function ActionSheet({
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
