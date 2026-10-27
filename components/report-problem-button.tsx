@@ -194,13 +194,13 @@ export function ReportProblemButton({
           }}
           className="driver-btn-ghost mt-4 flex h-14 w-full items-center justify-center text-[16px] font-semibold"
         >
-          {open.length > 0 ? "Update problem" : "+ Report new problem"}
+          + Add new problem
         </button>
       </ActionSheet>
 
       <ActionSheet
         open={view === "new"}
-        title={open.length > 0 ? "What's happening now?" : "What's wrong?"}
+        title="What's wrong?"
         onClose={() => setView(issues.length > 0 ? "list" : "closed")}
       >
         <div className="grid grid-cols-2 gap-2">
