@@ -2,24 +2,18 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { getToken } from "@/lib/auth-storage";
-import { AssignedLoad, fetchMyLoads, LoadStop } from "@/lib/driver-api";
-import { activeStop, loadCode, placeShort, sortedStops, stopTypeLabel } from "@/lib/load-stops";
-import { findStopSchedule } from "@/lib/schedule-status";
+import { AssignedLoad, fetchMyLoads } from "@/lib/driver-api";
+import { loadCode } from "@/lib/load-stops";
 import { useSignOut } from "@/lib/use-sign-out";
 import { LoadMap } from "@/components/load-map";
 import { LoadPaperwork } from "@/components/load-paperwork";
 import { NextStepCard } from "@/components/next-step-card";
 import { ReportProblemButton } from "@/components/report-problem-button";
 import { MenuRow } from "@/components/menu-row";
-
-function stopDot(stop: LoadStop): string {
-  if (stop.stopStatus === "completed") return "bg-emerald-600";
-  if (stop.stopStatus === "en_route" || stop.stopStatus === "arrived") return "bg-[color:var(--accent)]";
-  return "bg-zinc-400";
-}
+import { RouteTimeline } from "@/components/route-timeline";
 
 export default function LoadDetailPage() {
   const { loadId } = useParams<{ loadId: string }>();
@@ -56,8 +50,6 @@ export default function LoadDetailPage() {
     void apply(fetchMyLoads());
   }, [apply, router]);
 
-  const stops = useMemo(() => sortedStops(load), [load]);
-  const current = activeStop(load);
 
   // Backend appends "Stuck reported (driver): …" notes for dispatch — the driver already knows.
   const instructions = (load?.specialInstructions ?? "")
@@ -107,32 +99,7 @@ export default function LoadDetailPage() {
               </div>
             ) : null}
 
-            <ol className="rounded-2xl bg-[color:var(--surface)] px-4 py-2">
-              {stops.map(({ stop, num }, i) => {
-                const sched = findStopSchedule(load.scheduleSummary, num);
-                const when = sched?.scheduledDisplay ?? ([stop.date, stop.time].filter(Boolean).join(" ") || null);
-                const isCurrent = current?.num === num;
-                const isLast = i === stops.length - 1;
-                return (
-                  <li key={num} className="relative flex gap-3 py-2.5">
-                    {!isLast ? (
-                      <span className="absolute left-[13px] top-[38px] bottom-[-10px] w-0.5 bg-[color:var(--line-strong)]" aria-hidden />
-                    ) : null}
-                    <span className={`relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white ${stopDot(stop)}`}>
-                      {stop.stopStatus === "completed" ? "✓" : num}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className={`truncate text-[16px] ${isCurrent ? "font-semibold text-[color:var(--ink)]" : "text-[color:var(--ink-secondary)]"}`}>
-                        {placeShort(stop)}
-                      </p>
-                      <p className="truncate text-[13px] text-[color:var(--ink-muted)]">
-                        {[stopTypeLabel(stop.type), when].filter(Boolean).join(" · ")}
-                      </p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
+            <RouteTimeline load={load} />
 
             <div className="divide-y divide-[color:var(--line)] overflow-hidden rounded-2xl bg-[color:var(--surface)]">
               <LoadPaperwork loadId={load._id} onSessionExpired={signOut} />

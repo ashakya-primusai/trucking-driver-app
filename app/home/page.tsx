@@ -12,6 +12,11 @@ import { primaryLoadScheduleStatus } from "@/lib/schedule-status";
 import { useSignOut } from "@/lib/use-sign-out";
 import { BottomTabNav } from "@/components/bottom-tab-nav";
 import { LoadMap } from "@/components/load-map";
+import { LoadPaperwork } from "@/components/load-paperwork";
+import { MenuRow } from "@/components/menu-row";
+import { ReportProblemButton } from "@/components/report-problem-button";
+import { RouteTimeline } from "@/components/route-timeline";
+import { TripStats } from "@/components/trip-stats";
 import { Logo } from "@/components/Logo";
 import { NextStepCard } from "@/components/next-step-card";
 import { ScheduleStatusPill } from "@/components/schedule-status-pill";
@@ -113,7 +118,7 @@ export default function HomePage() {
 
       {current ? <LoadMap load={current} className="h-[280px]" /> : null}
 
-      <main className={`relative z-10 mx-auto flex w-full max-w-lg flex-1 flex-col gap-5 px-4 pb-5 ${current ? "-mt-8" : "pt-5"}`}>
+      <main className={`relative z-10 mx-auto flex w-full max-w-lg flex-1 flex-col gap-3 px-4 pb-24 ${current ? "-mt-8" : "pt-5"}`}>
         {error ? (
           <p className="rounded-2xl bg-[color:var(--danger-soft)] px-4 py-3 text-[14px] text-[color:var(--danger)]" role="alert">
             {error}
@@ -133,13 +138,22 @@ export default function HomePage() {
         {current ? (
           <section>
             <NextStepCard load={current} onChanged={load} onSessionExpired={signOut} linkToLoad />
-            <Link
-              href={`/load/${current._id}`}
-              className="mt-3 flex h-12 items-center justify-center rounded-2xl bg-[color:var(--surface)] text-[15px] font-semibold text-[color:var(--ink)] no-underline"
-            >
-              Stops, documents &amp; help ›
-            </Link>
           </section>
+        ) : null}
+
+        {current ? (
+          <>
+            <TripStats loadId={current._id} />
+
+            <div className="grid grid-cols-2 gap-2">
+              <LoadPaperwork loadId={current._id} onSessionExpired={signOut} variant="tile" />
+              <ReportProblemButton loadId={current._id} onSessionExpired={signOut} variant="tile" />
+              <MenuRow variant="tile" icon="💬" label="Ask Bella" href="/chat" />
+              <MenuRow variant="tile" icon="📋" label="Load details" href={`/load/${current._id}`} />
+            </div>
+
+            <RouteTimeline load={current} />
+          </>
         ) : null}
 
         {others.length > 0 ? (

@@ -18,9 +18,11 @@ function shortLabel(label: string): string {
 export function LoadPaperwork({
   loadId,
   onSessionExpired,
+  variant = "row",
 }: {
   loadId: string;
   onSessionExpired: () => void;
+  variant?: "row" | "tile";
 }) {
   const [data, setData] = useState<LoadDocumentsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +98,7 @@ export function LoadPaperwork({
       />
 
       <MenuRow
+        variant={variant}
         icon="📄"
         label="Documents"
         detail={detail}

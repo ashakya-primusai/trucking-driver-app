@@ -31,9 +31,11 @@ function timeAgo(iso: string | null): string {
 export function ReportProblemButton({
   loadId,
   onSessionExpired,
+  variant = "row",
 }: {
   loadId: string;
   onSessionExpired: () => void;
+  variant?: "row" | "tile";
 }) {
   const [issues, setIssues] = useState<DriverIssue[]>([]);
   const [view, setView] = useState<"closed" | "list" | "new">("closed");
@@ -100,6 +102,7 @@ export function ReportProblemButton({
   return (
     <>
       <MenuRow
+        variant={variant}
         icon="⚠️"
         label="Problems"
         detail={open.length > 0 ? `${open.length} open` : null}
