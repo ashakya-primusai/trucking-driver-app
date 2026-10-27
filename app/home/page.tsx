@@ -19,7 +19,6 @@ import { RouteTimeline } from "@/components/route-timeline";
 import { TripStats } from "@/components/trip-stats";
 import { Logo } from "@/components/Logo";
 import { NextStepCard } from "@/components/next-step-card";
-import { ScheduleStatusPill } from "@/components/schedule-status-pill";
 
 /** Load the driver is working right now: one already in progress, else the newest assignment. */
 function pickCurrentLoad(loads: AssignedLoad[]): AssignedLoad | null {
@@ -74,8 +73,12 @@ export default function HomePage() {
   }, [apply, router]);
 
   const loads = useMemo(() => data?.loads ?? [], [data]);
-  const current = useMemo(() => pickCurrentLoad(loads), [loads]);
-  const others = loads.filter((l) => l._id !== current?._id);
+  // Driver's pick from the switcher; falls back to the load in progress (or newest) when unset or gone.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const current = useMemo(
+    () => loads.find((l) => l._id === selectedId) ?? pickCurrentLoad(loads),
+    [loads, selectedId]
+  );
 
   return (
     <div className="app-shell flex min-h-full flex-1 flex-col">
@@ -116,7 +119,11 @@ export default function HomePage() {
         </div>
       </header>
 
-      {current ? <LoadMap load={current} className="h-[280px]" /> : null}
+      {loads.length > 1 ? (
+        <LoadSwitcher loads={loads} selectedId={current?._id ?? null} onSelect={setSelectedId} />
+      ) : null}
+
+      {current ? <LoadMap key={current._id} load={current} className="h-[280px]" /> : null}
 
       <main className={`relative z-10 mx-auto flex w-full max-w-lg flex-1 flex-col gap-3 px-4 pb-24 ${current ? "-mt-8" : "pt-5"}`}>
         {error ? (
@@ -137,7 +144,7 @@ export default function HomePage() {
 
         {current ? (
           <section>
-            <NextStepCard load={current} onChanged={load} onSessionExpired={signOut} linkToLoad />
+            <NextStepCard key={current._id} load={current} onChanged={load} onSessionExpired={signOut} linkToLoad />
           </section>
         ) : null}
 
@@ -146,8 +153,8 @@ export default function HomePage() {
             <TripStats loadId={current._id} />
 
             <div className="grid grid-cols-2 gap-2">
-              <LoadPaperwork loadId={current._id} onSessionExpired={signOut} variant="tile" />
-              <ReportProblemButton loadId={current._id} onSessionExpired={signOut} variant="tile" />
+              <LoadPaperwork key={`docs-${current._id}`} loadId={current._id} onSessionExpired={signOut} variant="tile" />
+              <ReportProblemButton key={`issues-${current._id}`} loadId={current._id} onSessionExpired={signOut} variant="tile" />
               <MenuRow variant="tile" icon="💬" label="Ask Bella" href="/chat" />
               <MenuRow variant="tile" icon="📋" label="Load details" href={`/load/${current._id}`} />
             </div>
@@ -156,34 +163,54 @@ export default function HomePage() {
           </>
         ) : null}
 
-        {others.length > 0 ? (
-          <section>
-            <h2 className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-[color:var(--ink-muted)]">Next</h2>
-            <ul className="flex flex-col gap-2">
-              {others.map((l) => {
-                return (
-                  <li key={l._id}>
-                    <Link href={`/load/${l._id}`} className="load-row block no-underline">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="truncate font-mono text-[14px] font-semibold text-[color:var(--ink)]">{loadCode(l)}</p>
-                          {l.scheduleSummary ? (
-                            <ScheduleStatusPill status={primaryLoadScheduleStatus(l.scheduleSummary)} />
-                          ) : null}
-                        </div>
-                        <p className="mt-1 truncate text-[13px] text-[color:var(--ink-secondary)]">{loadRouteLabel(l)}</p>
-                      </div>
-                      <span className="shrink-0 text-[20px] text-[color:var(--ink-faint)]" aria-hidden>›</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        ) : null}
       </main>
 
       <BottomTabNav />
+    </div>
+  );
+}
+
+/** One chip per assigned load — tap to switch what the map, card and tiles show. */
+function LoadSwitcher({
+  loads,
+  selectedId,
+  onSelect,
+}: {
+  loads: AssignedLoad[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <div className="border-b border-[color:var(--line)] bg-[color:var(--surface)]">
+      <div className="mx-auto flex max-w-lg gap-2 overflow-x-auto px-4 py-2.5">
+        {loads.map((l, i) => {
+          const selected = l._id === selectedId;
+          const status = l.scheduleSummary ? primaryLoadScheduleStatus(l.scheduleSummary) : "unknown";
+          const inProgress = ["en_route", "arrived"].includes(activeStop(l)?.stop.stopStatus ?? "");
+          const dot = status === "late" ? "bg-red-500" : inProgress ? "bg-[color:var(--accent)]" : "bg-zinc-400";
+          return (
+            <button
+              key={l._id}
+              type="button"
+              onClick={() => onSelect(l._id)}
+              aria-pressed={selected}
+              className={`flex max-w-[220px] shrink-0 flex-col rounded-2xl border px-3.5 py-2 text-left ${
+                selected
+                  ? "border-[color:var(--ink)] bg-[color:var(--ink)] text-white"
+                  : "border-[color:var(--line-strong)] bg-[color:var(--surface)] text-[color:var(--ink)]"
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} aria-hidden />
+                <span className="truncate text-[14px] font-semibold">{loadRouteLabel(l)}</span>
+              </span>
+              <span className={`mt-0.5 truncate font-mono text-[11px] ${selected ? "text-white/70" : "text-[color:var(--ink-muted)]"}`}>
+                {i + 1}/{loads.length} · {loadCode(l)}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

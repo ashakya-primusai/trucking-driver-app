@@ -44,6 +44,21 @@ type Props = {
 
 const FALLBACK_CENTER: [number, number] = [39.5, -98.35];
 
+const DRIVER_FIT_MAX_KM = 800;
+
+/** Great-circle distance (km) from a point to the closest of `points` ([lat, lng]). */
+function nearestKm(p: LatLng, points: [number, number][]): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  let best = Infinity;
+  for (const [lat, lng] of points) {
+    const dLat = toRad(lat - p.lat);
+    const dLng = toRad(lng - p.lng);
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(p.lat)) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2;
+    best = Math.min(best, 12742 * Math.asin(Math.sqrt(a)));
+  }
+  return best;
+}
+
 export default function LoadStopsMap({ driver, stops, routePath, routes, className, fitKey }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
@@ -214,9 +229,10 @@ export default function LoadStopsMap({ driver, stops, routePath, routes, classNa
       if (routePath && routePath.length >= 2) {
         path = routePath.map(([lng, lat]) => [lat, lng] as [number, number]);
       } else {
-        path = [];
-        if (driver) path.push([driver.lat, driver.lng]);
-        for (const stop of stops) path.push([stop.position.lat, stop.position.lng]);
+        path = stops.map((stop) => [stop.position.lat, stop.position.lng] as [number, number]);
+        if (driver && (path.length === 0 || nearestKm(driver, path) <= DRIVER_FIT_MAX_KM)) {
+          path.unshift([driver.lat, driver.lng]);
+        }
       }
 
       if (path.length >= 2) {
@@ -234,8 +250,12 @@ export default function LoadStopsMap({ driver, stops, routePath, routes, classNa
         polylineRef.current = null;
       }
 
-      const boundsPath = path.length > 0 ? path : stops.map((s) => [s.position.lat, s.position.lng] as [number, number]);
-      if (driver) boundsPath.push([driver.lat, driver.lng]);
+      const boundsPath = path.length > 0 ? [...path] : stops.map((s) => [s.position.lat, s.position.lng] as [number, number]);
+      // Only zoom to include the driver when they're near the route — a far-away GPS/emulated
+      // point would otherwise zoom the map out to a different continent.
+      if (driver && (boundsPath.length === 0 || nearestKm(driver, boundsPath) <= DRIVER_FIT_MAX_KM)) {
+        boundsPath.push([driver.lat, driver.lng]);
+      }
 
       const currentFitKey = fitKey ?? stops.map((s) => s.id).join(",");
       if (currentFitKey && fitAppliedKey.current !== currentFitKey && boundsPath.length > 0) {
