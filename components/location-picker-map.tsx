@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { LatLng as LeafletLatLng, Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
 
 import { normalizeLatLng } from "@/lib/coordinates";
+import { MAP_TILE_OPTIONS, MAP_TILE_URL } from "@/lib/map-tiles";
 
 export type PickerPosition = { lat: number; lng: number };
 
@@ -43,11 +44,7 @@ export default function LocationPickerMap({ position, onPick, recenterTrigger, c
         attributionControl: true,
       }).setView(initial, position ? 13 : 4);
 
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-        maxZoom: 19,
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      }).addTo(map);
+      L.tileLayer(MAP_TILE_URL, MAP_TILE_OPTIONS).addTo(map);
 
       map.on("click", (e) => {
         try {

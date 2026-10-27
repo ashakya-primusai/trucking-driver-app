@@ -8,6 +8,8 @@ import type {
   Polyline as LeafletPolyline,
 } from "leaflet";
 
+import { MAP_TILE_OPTIONS, MAP_TILE_URL } from "@/lib/map-tiles";
+
 export type LatLng = { lat: number; lng: number };
 
 export type StopMarker = {
@@ -70,14 +72,7 @@ export default function LoadStopsMap({ driver, stops, routePath, routes, classNa
         dragging: true,
       }).setView(initial, driver || stops.length > 0 ? 11 : 4);
 
-      L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-        {
-          maxZoom: 19,
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        }
-      ).addTo(map);
+      L.tileLayer(MAP_TILE_URL, MAP_TILE_OPTIONS).addTo(map);
 
       L.control.zoom({ position: "topright" }).addTo(map);
 

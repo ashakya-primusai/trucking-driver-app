@@ -8,16 +8,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { getToken } from "@/lib/auth-storage";
 import { AssignedLoad, fetchLoadRoute, fetchMyLoads, LoadStop } from "@/lib/driver-api";
 import { useLocationTracking } from "@/lib/location-tracking-context";
-import {
-  activeStop,
-  loadCode,
-  mapsDirectionsUrl,
-  placeShort,
-  sortedStops,
-  stopStatusLabel,
-  stopTypeLabel,
-} from "@/lib/load-stops";
-import { findStopSchedule, primaryLoadScheduleStatus } from "@/lib/schedule-status";
+import { activeStop, loadCode, placeShort, sortedStops, stopTypeLabel } from "@/lib/load-stops";
+import { primaryLoadScheduleStatus } from "@/lib/schedule-status";
 import { useSignOut } from "@/lib/use-sign-out";
 import { LoadPaperwork } from "@/components/load-paperwork";
 import { NextStepCard } from "@/components/next-step-card";
@@ -132,6 +124,11 @@ export default function LoadDetailPage() {
   );
 
   const fitKey = markers.map((m) => m.id).join("|") + (lastPosition ? "+d" : "") + (routePath ? "+r" : "");
+  // Backend appends "Stuck reported (driver): …" notes for dispatch — the driver already knows.
+  const instructions = (load?.specialInstructions ?? "")
+    .split(/\s*Stuck reported \(driver\):[^\n]*?(?=Stuck reported \(driver\):|$)/)
+    .join(" ")
+    .trim();
   const done = stops.filter(({ stop }) => stop.stopStatus === "completed" || stop.stopStatus === "skipped").length;
 
   return (
@@ -178,47 +175,32 @@ export default function LoadDetailPage() {
           <>
             <NextStepCard load={load} onChanged={refresh} onSessionExpired={signOut} />
 
-            {load.specialInstructions ? (
-              <div className="rounded-2xl border-l-4 border-[color:var(--accent)] bg-[color:var(--accent-soft)] px-4 py-3 text-[14px] leading-relaxed text-[color:var(--ink-secondary)]">
-                <b className="text-[color:var(--ink)]">Instructions: </b>
-                {load.specialInstructions}
-              </div>
+            {instructions ? (
+              <p className="flex gap-2 text-[14px] leading-snug text-[color:var(--ink-secondary)]">
+                <span aria-hidden>📝</span>
+                {instructions}
+              </p>
             ) : null}
 
             <section>
               <div className="mb-2 flex items-center justify-between">
-                <h2 className="text-[15px] font-semibold text-[color:var(--ink)]">All stops</h2>
+                <h2 className="text-[13px] font-semibold uppercase tracking-wide text-[color:var(--ink-muted)]">Route</h2>
                 <Link href={`/plan?load=${load._id}`} className="text-[14px] font-semibold text-[color:var(--accent-deep)] no-underline">
-                  Trip plan ›
+                  Plan ›
                 </Link>
               </div>
-              <ol className="divide-y divide-[color:var(--line)] overflow-hidden rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)]">
-                {stops.map(({ stop, num }) => {
-                  const sched = findStopSchedule(load.scheduleSummary, num);
-                  const when = sched?.predictedDisplay ?? sched?.scheduledDisplay ?? ([stop.date, stop.time].filter(Boolean).join(" ") || null);
-                  const nav = mapsDirectionsUrl(stop);
-                  return (
-                    <li key={num} className={`flex items-center gap-3 px-4 py-3 ${current?.num === num ? "bg-[color:var(--accent-soft)]" : ""}`}>
-                      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white ${stopDot(stop)}`}>
-                        {num}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[14px] font-semibold text-[color:var(--ink)]">
-                          {stopTypeLabel(stop.type)} · {placeShort(stop)}
-                        </p>
-                        <p className="truncate text-[12px] text-[color:var(--ink-muted)]">
-                          {stopStatusLabel(stop.stopStatus)}
-                          {when ? ` · ${sched?.predictedDisplay ? "ETA" : "Due"} ${when}` : ""}
-                        </p>
-                      </div>
-                      {nav && stop.stopStatus !== "completed" ? (
-                        <a href={nav} target="_blank" rel="noopener noreferrer" className="shrink-0 text-[13px] font-semibold text-[color:var(--accent-deep)] no-underline">
-                          Go
-                        </a>
-                      ) : null}
-                    </li>
-                  );
-                })}
+              <ol className="flex flex-col gap-3">
+                {stops.map(({ stop, num }) => (
+                  <li key={num} className="flex items-center gap-3">
+                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white ${stopDot(stop)}`}>
+                      {stop.stopStatus === "completed" ? "✓" : num}
+                    </span>
+                    <span className={`min-w-0 flex-1 truncate text-[15px] ${current?.num === num ? "font-semibold text-[color:var(--ink)]" : "text-[color:var(--ink-secondary)]"}`}>
+                      {placeShort(stop)}
+                    </span>
+                    <span className="shrink-0 text-[13px] text-[color:var(--ink-muted)]">{stopTypeLabel(stop.type)}</span>
+                  </li>
+                ))}
               </ol>
             </section>
 

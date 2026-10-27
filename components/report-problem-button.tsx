@@ -52,9 +52,9 @@ export function ReportProblemButton({
           setSent(false);
           setOpen(true);
         }}
-        className="flex h-12 w-full items-center justify-center rounded-xl border border-[color:var(--danger)]/30 bg-[color:var(--danger-soft)] text-[15px] font-semibold text-[color:var(--danger)]"
+        className="mx-auto flex items-center gap-1.5 py-2 text-[14px] font-semibold text-[color:var(--danger)]"
       >
-        Report a problem
+        ⚠ Report a problem
       </button>
       {sent ? (
         <p className="mt-2 text-center text-[14px] font-medium text-emerald-700">Dispatch has been alerted.</p>

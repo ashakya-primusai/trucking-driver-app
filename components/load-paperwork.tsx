@@ -69,7 +69,17 @@ export function LoadPaperwork({
 
   return (
     <section>
-      <h2 className="mb-2 text-[15px] font-semibold text-[color:var(--ink)]">Paperwork</h2>
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-[13px] font-semibold uppercase tracking-wide text-[color:var(--ink-muted)]">Documents</h2>
+        <button
+          type="button"
+          disabled={!!uploading || !data}
+          onClick={() => setPickerOpen(true)}
+          className="text-[14px] font-semibold text-[color:var(--accent-deep)] disabled:opacity-50"
+        >
+          {uploading ? "Uploading…" : "+ Add"}
+        </button>
+      </div>
 
       <input
         ref={fileRef}
@@ -102,15 +112,9 @@ export function LoadPaperwork({
         </div>
       ) : null}
 
-      <button
-        type="button"
-        disabled={!!uploading || !data}
-        onClick={() => setPickerOpen(true)}
-        className="driver-btn-ghost flex h-12 w-full items-center justify-center gap-2 text-[15px] font-semibold disabled:opacity-50"
-      >
-        {uploading ? `Uploading ${uploadingLabel ?? ""}…` : "+ Add document"}
-      </button>
-
+      {uploadingLabel ? (
+        <p className="text-[14px] text-[color:var(--ink-muted)]">Uploading {uploadingLabel}…</p>
+      ) : null}
       {done ? (
         <p className="mt-2 text-[14px] font-medium text-emerald-700">✓ {done} uploaded</p>
       ) : null}
