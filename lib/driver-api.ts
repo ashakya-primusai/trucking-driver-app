@@ -867,3 +867,28 @@ export type LoadPlan = {
 export function fetchLoadPlan(loadId: string) {
   return driverRequest<LoadPlan>(`/loads/${encodeURIComponent(loadId)}/plan`);
 }
+
+export type DriverIssue = {
+  _id: string;
+  reason: string;
+  status: "active" | "resolved";
+  sourceChannel: string;
+  photoCount: number;
+  createdAt: string | null;
+  resolvedAt: string | null;
+};
+
+/** GET /driver-app/loads/:loadId/issues — problems this driver reported on the load. */
+export async function fetchLoadIssues(loadId: string) {
+  return (await driverRequest<{ issues: DriverIssue[] }>(`/loads/${encodeURIComponent(loadId)}/issues`)).issues;
+}
+
+/** Mark a reported problem as fixed (resolve) or remove it entirely (delete). */
+export async function closeLoadIssue(loadId: string, reportId: string, mode: "resolve" | "delete") {
+  const base = `/loads/${encodeURIComponent(loadId)}/issues/${encodeURIComponent(reportId)}`;
+  const res =
+    mode === "resolve"
+      ? await driverRequest<{ issues: DriverIssue[] }>(`${base}/resolve`, { method: "PATCH" })
+      : await driverRequest<{ issues: DriverIssue[] }>(base, { method: "DELETE" });
+  return res.issues;
+}
