@@ -5,6 +5,7 @@ import { fetchLoadDocuments, LoadDocumentsResponse, uploadLoadDocument } from "@
 import { prepareFileForUpload } from "@/lib/file-upload";
 import { ActionSheet } from "@/components/action-sheet";
 import { MenuRow } from "@/components/menu-row";
+import { AlertIcon, CameraIcon, CheckCircleIcon, DocumentIcon } from "@/components/icons";
 
 /** "Proof of Delivery (POD)" → "POD"; labels without a short form stay as-is. */
 function shortLabel(label: string): string {
@@ -99,7 +100,7 @@ export function LoadPaperwork({
 
       <MenuRow
         variant={variant}
-        icon="📄"
+        icon={<DocumentIcon />}
         label="Documents"
         detail={detail}
         tone={needed.length > 0 && !uploading ? "warning" : "default"}
@@ -116,7 +117,7 @@ export function LoadPaperwork({
               onClick={() => startUpload(item.slug)}
               className="flex items-center gap-3 rounded-2xl bg-[color:var(--warning-soft)] px-4 py-3.5 text-left disabled:opacity-50"
             >
-              <span className="text-[22px]" aria-hidden>📷</span>
+              <CameraIcon className="h-6 w-6 shrink-0 text-amber-800" />
               <span className="min-w-0 flex-1">
                 <span className="block text-[16px] font-semibold text-[color:var(--ink)]">{item.label}</span>
                 <span className="block text-[13px] text-amber-900">Tap to take a photo</span>
@@ -126,7 +127,7 @@ export function LoadPaperwork({
 
           {docs.map((d) => (
             <div key={d._id} className="flex items-center gap-3 rounded-2xl bg-[color:var(--canvas)] px-4 py-3">
-              <span className="text-[18px]" aria-hidden>{d.rejected ? "⚠️" : "✅"}</span>
+              {d.rejected ? <AlertIcon className="h-5 w-5 shrink-0 text-[color:var(--danger)]" /> : <CheckCircleIcon className="h-5 w-5 shrink-0 text-emerald-600" />}
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[15px] font-medium text-[color:var(--ink)]">{d.label}</span>
                 {d.rejected ? (

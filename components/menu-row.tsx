@@ -19,7 +19,7 @@ export function MenuRow({ icon, label, detail, tone = "default", onClick, href, 
   const detailColor = tone === "warning" ? "bg-amber-500/15 text-amber-900 rounded-full px-2.5 py-0.5" : "text-[color:var(--ink-muted)]";
   const body = (
     <>
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:var(--canvas)] text-[18px]" aria-hidden>
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:var(--canvas)] text-[color:var(--ink-secondary)]" aria-hidden>
         {icon}
       </span>
       <span className={`min-w-0 flex-1 truncate text-[16px] font-medium ${labelColor}`}>{label}</span>
@@ -39,7 +39,7 @@ function MenuTile({ icon, label, detail, tone, onClick, href }: Omit<Props, "var
   const body = (
     <>
       <span className="flex items-start justify-between">
-        <span className="text-[26px] leading-none" aria-hidden>{icon}</span>
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--canvas)] text-[color:var(--ink-secondary)]" aria-hidden>{icon}</span>
         {detail ? (
           <span
             className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${

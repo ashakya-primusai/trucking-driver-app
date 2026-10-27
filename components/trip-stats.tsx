@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { fetchLoadPlan, LoadPlan } from "@/lib/driver-api";
 import { formatDuration, formatMiles } from "@/lib/load-stops";
+import { ClockIcon, FuelIcon, RoadIcon } from "@/components/icons";
 
 const KM_TO_MI = 0.621371;
 
@@ -35,17 +36,17 @@ export function TripStats({ loadId }: { loadId: string }) {
 
   return (
     <Link href={`/plan?load=${loadId}`} className="grid grid-cols-3 gap-2 no-underline">
-      <Stat icon="🛣️" value={miles ?? "—"} label="Miles" />
-      <Stat icon="⏱️" value={drive ?? "—"} label="Drive" />
-      <Stat icon="⛽" value={fuelStops ?? "—"} label="Fuel stops" />
+      <Stat icon={<RoadIcon />} value={miles ?? "—"} label="Miles" />
+      <Stat icon={<ClockIcon />} value={drive ?? "—"} label="Drive" />
+      <Stat icon={<FuelIcon />} value={fuelStops ?? "—"} label="Fuel stops" />
     </Link>
   );
 }
 
-function Stat({ icon, value, label }: { icon: string; value: string; label: string }) {
+function Stat({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
   return (
     <div className="rounded-2xl bg-[color:var(--surface)] px-3 py-3 text-center">
-      <p className="text-[18px] leading-none" aria-hidden>{icon}</p>
+      <span className="mx-auto flex justify-center text-[color:var(--ink-muted)]">{icon}</span>
       <p className="mt-2 text-[17px] font-bold tabular-nums text-[color:var(--ink)]">{value}</p>
       <p className="text-[12px] text-[color:var(--ink-muted)]">{label}</p>
     </div>

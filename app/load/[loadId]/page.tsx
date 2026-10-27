@@ -14,6 +14,7 @@ import { NextStepCard } from "@/components/next-step-card";
 import { ReportProblemButton } from "@/components/report-problem-button";
 import { MenuRow } from "@/components/menu-row";
 import { RouteTimeline } from "@/components/route-timeline";
+import { MapIcon, NoteIcon } from "@/components/icons";
 
 export default function LoadDetailPage() {
   const { loadId } = useParams<{ loadId: string }>();
@@ -94,7 +95,7 @@ export default function LoadDetailPage() {
 
             {instructions ? (
               <div className="flex gap-3 rounded-2xl bg-[color:var(--surface)] px-4 py-3.5 text-[14px] leading-snug text-[color:var(--ink-secondary)]">
-                <span aria-hidden>📝</span>
+                <NoteIcon className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--ink-muted)]" />
                 <span>{instructions}</span>
               </div>
             ) : null}
@@ -103,7 +104,7 @@ export default function LoadDetailPage() {
 
             <div className="divide-y divide-[color:var(--line)] overflow-hidden rounded-2xl bg-[color:var(--surface)]">
               <LoadPaperwork loadId={load._id} onSessionExpired={signOut} />
-              <MenuRow icon="🗺️" label="Trip plan" detail="Fuel & ETAs" href={`/plan?load=${load._id}`} />
+              <MenuRow icon={<MapIcon />} label="Trip plan" detail="Fuel & ETAs" href={`/plan?load=${load._id}`} />
               <ReportProblemButton loadId={load._id} onSessionExpired={signOut} />
             </div>
           </>

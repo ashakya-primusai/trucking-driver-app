@@ -19,6 +19,7 @@ import { RouteTimeline } from "@/components/route-timeline";
 import { TripStats } from "@/components/trip-stats";
 import { Logo } from "@/components/Logo";
 import { NextStepCard } from "@/components/next-step-card";
+import { ChatIcon, ClipboardIcon } from "@/components/icons";
 
 /** Load the driver is working right now: one already in progress, else the newest assignment. */
 function pickCurrentLoad(loads: AssignedLoad[]): AssignedLoad | null {
@@ -155,8 +156,8 @@ export default function HomePage() {
             <div className="grid grid-cols-2 gap-2">
               <LoadPaperwork key={`docs-${current._id}`} loadId={current._id} onSessionExpired={signOut} variant="tile" />
               <ReportProblemButton key={`issues-${current._id}`} loadId={current._id} onSessionExpired={signOut} variant="tile" />
-              <MenuRow variant="tile" icon="💬" label="Ask Bella" href="/chat" />
-              <MenuRow variant="tile" icon="📋" label="Load details" href={`/load/${current._id}`} />
+              <MenuRow variant="tile" icon={<ChatIcon />} label="Ask Bella" href="/chat" />
+              <MenuRow variant="tile" icon={<ClipboardIcon />} label="Load details" href={`/load/${current._id}`} />
             </div>
 
             <RouteTimeline load={current} />

@@ -16,12 +16,13 @@ import {
 import { useLocationTracking } from "@/lib/location-tracking-context";
 import { useFirebaseEvent, type FirebaseDriverNotificationEvent } from "@/lib/firebase-realtime";
 import { BottomTabNav } from "@/components/bottom-tab-nav";
+import { BoxIcon, ChatIcon, GearIcon, TruckIcon } from "@/components/icons";
 
-const TYPE_ICONS: Record<string, { emoji: string; bg: string }> = {
-  load_assigned: { emoji: "🚛", bg: "bg-orange-100 dark:bg-orange-900/30" },
-  load_updated: { emoji: "📦", bg: "bg-blue-100 dark:bg-blue-900/30" },
-  message: { emoji: "💬", bg: "bg-teal-100 dark:bg-teal-900/30" },
-  system: { emoji: "⚙️", bg: "bg-slate-100 dark:bg-slate-800" },
+const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  load_assigned: TruckIcon,
+  load_updated: BoxIcon,
+  message: ChatIcon,
+  system: GearIcon,
 };
 
 export default function NotificationsPage() {
@@ -257,10 +258,11 @@ function NotificationCard({
   onMarkRead,
 }: {
   notification: DriverNotification;
-  icon: { emoji: string; bg: string };
+  icon: React.ComponentType<{ className?: string }>;
   formatTime: (d: string) => string;
   onMarkRead: (id: string) => void;
 }) {
+  const Icon = icon;
   const inner = (
     <div
       className={`driver-card flex items-start gap-3 p-4 transition ${
@@ -272,10 +274,8 @@ function NotificationCard({
         if (!n.read) onMarkRead(n._id);
       }}
     >
-      <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${icon.bg}`}
-      >
-        {icon.emoji}
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--canvas)] text-[color:var(--ink-secondary)]">
+        <Icon />
       </div>
       <div className="min-w-0 flex-1">
         <p

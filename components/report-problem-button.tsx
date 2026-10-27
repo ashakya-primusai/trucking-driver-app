@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { closeLoadIssue, DriverIssue, fetchLoadIssues, reportLoadIssue } from "@/lib/driver-api";
 import { ActionSheet } from "@/components/action-sheet";
 import { MenuRow } from "@/components/menu-row";
+import { AlertIcon, CheckCircleIcon, TrashIcon } from "@/components/icons";
 
 const QUICK_REASONS = [
   "Stuck in traffic",
@@ -103,7 +104,7 @@ export function ReportProblemButton({
     <>
       <MenuRow
         variant={variant}
-        icon="⚠️"
+        icon={<AlertIcon />}
         label="Problems"
         detail={open.length > 0 ? `${open.length} open` : null}
         tone={open.length > 0 ? "warning" : "danger"}
@@ -143,9 +144,9 @@ export function ReportProblemButton({
                     disabled={!!busy}
                     onClick={() => setConfirmDelete(i._id)}
                     aria-label="Delete report"
-                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-[18px] disabled:opacity-50"
+                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-[color:var(--ink-secondary)] disabled:opacity-50"
                   >
-                    🗑
+                    <TrashIcon />
                   </button>
                 )}
               </div>
@@ -154,7 +155,7 @@ export function ReportProblemButton({
 
           {resolved.map((i) => (
             <div key={i._id} className="flex items-center gap-3 rounded-2xl bg-[color:var(--canvas)] px-4 py-3">
-              <span aria-hidden>✅</span>
+              <CheckCircleIcon className="h-5 w-5 shrink-0 text-emerald-600" />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[15px] text-[color:var(--ink-secondary)]">{i.reason || "Problem"}</span>
                 <span className="block text-[12px] text-[color:var(--ink-muted)]">Resolved {timeAgo(i.resolvedAt)}</span>
@@ -174,9 +175,9 @@ export function ReportProblemButton({
                   disabled={!!busy}
                   onClick={() => setConfirmDelete(i._id)}
                   aria-label="Delete report"
-                  className="shrink-0 text-[16px] opacity-60"
+                  className="shrink-0 text-[color:var(--ink-muted)]"
                 >
-                  🗑
+                  <TrashIcon />
                 </button>
               )}
             </div>
